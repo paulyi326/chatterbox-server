@@ -13,7 +13,7 @@ var storage = [];
 module.exports = {
   handleRequest: function(request, response) {
 
-    var statusCode = 200;
+    var statusCode = 404;
     //  Without this line, this server wouldn't work. See the note
     //  * below about CORS.
     var headers = module.exports.defaultCorsHeaders;
@@ -21,34 +21,44 @@ module.exports = {
     var responseText='';
     var req=url.parse(request.url, true);
 
-    //OPTIONS
-    if(request.method === "OPTIONS") {
-      // handle options request
-      statusCode=200;
-    //GET
-    } else if (request.method === 'GET') {
+    //only allow correct path
+    if (req.pathname.slice(0, 8)==='/classes') {
+
+      var parameters=req.pathname.slice(1).split('/');
+
       var query=req.query;
 
-      headers['Content-Type'] = "application/json";
-      statusCode=200;
-      responseText=JSON.stringify(module.exports.returnResults(query));
-    //POST
-    } else if (request.method === 'POST') {
-      var body = "";
-      request.on('data', function (chunk) {
-        body += chunk;
-      });
-      request.on('end', function () {
-        var post = JSON.parse(body);
-        post.id = storage.length;
-        post.createdAt = new Date();
-        storage[post.id] = post;
+      if (parameters[1]==='room') {
+        query['roomname']=parameters[2];
+      }
 
+      //OPTIONS
+      if(request.method === "OPTIONS") {
+        // handle options request
+        statusCode=200;
+      //GET
+      } else if (request.method === 'GET') {
+
+        headers['Content-Type'] = "application/json";
+        statusCode=200;
+        responseText=JSON.stringify(module.exports.returnResults(query));
+      //POST
+      } else if (request.method === 'POST') {
         statusCode=201;
-
-      });
-    } else {
-      statusCode=404;
+        var body = "";
+        request.on('data', function (chunk) {
+          body += chunk;
+        });
+        request.on('end', function () {
+          var post = JSON.parse(body);
+          post.id = storage.length;
+          post.createdAt = new Date();
+          if (query['roomname'] !== undefined) {
+            post.roomname = query['roomname']
+          }
+          storage[post.id] = post;
+        });
+      }
     }
 
     // // console.log(response);
@@ -58,7 +68,6 @@ module.exports = {
     // /* Documentation for both request and response can be found at
     //  * http://nodemanual.org/0.8.14/nodejs_ref_guide/http.html */
 
-    console.log("Serving request type " + request.method + " for url " + request.url);
 
     // /* .writeHead() tells our server what HTTP status code to send back */
     response.writeHead(statusCode, headers);
@@ -74,19 +83,27 @@ module.exports = {
     var resultsObj={'results':[]};
     var limit=queryObj.limit || 100;
     var order=queryObj.order;
+    var roomname = queryObj.roomname;
 
-    limit = Math.min(limit, storage.length);
+    var filterStorage=storage;
+    if (roomname) {
+      filterStorage = _.filter(storage, function(messageObj) {
+        return messageObj.roomname === roomname;
+      });
+    }
+
+    limit = Math.min(limit, filterStorage.length);
 
     if (order===undefined) {
       for (var count=0; count<limit; count++) {
-        resultsObj.results.push(storage[count]);
+        resultsObj.results.push(filterStorage[count]);
       }
     } else if (order[0]==='-') {
       order=order.slice(1);
-      resultsObj.results=_.sortBy(storage, order);
+      resultsObj.results=_.sortBy(filterStorage, order);
       resultsObj.results=resultsObj.results.reverse();
     } else {
-      resultsObj.results=_.sortBy(storage, order);
+      resultsObj.results=_.sortBy(filterStorage, order);
     }
 
     return resultsObj;
