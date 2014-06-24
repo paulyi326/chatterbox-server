@@ -8,31 +8,30 @@ var url = require('url');
 var _ = require('underscore');
 var storage = [];
 
+
+
 module.exports = {
   handleRequest: function(request, response) {
+
+    var statusCode = 200;
+    //  Without this line, this server wouldn't work. See the note
+    //  * below about CORS.
+    var headers = module.exports.defaultCorsHeaders;
+    headers['Content-Type'] = "text/plain";
+    var responseText='';
+    var req=url.parse(request.url, true);
+
     //OPTIONS
     if(request.method === "OPTIONS") {
       // handle options request
-      console.log('heeeeeey');
-      var headers = module.exports.defaultCorsHeaders;
-      headers['Content-Type'] = "text/plain";
-      response.writeHead(200, headers);
-      response.end();
+      statusCode=200;
     //GET
     } else if (request.method === 'GET') {
-      console.log('GOT IT');
-
-      var req=url.parse(request.url, true);
       var query=req.query;
 
-      console.log(req);
-
-      var headers = module.exports.defaultCorsHeaders;
       headers['Content-Type'] = "application/json";
-      response.writeHead(200, headers);
-      var results=JSON.stringify(module.exports.returnResults(query));
-      console.log(results);
-      response.end(results);
+      statusCode=200;
+      responseText=JSON.stringify(module.exports.returnResults(query));
     //POST
     } else if (request.method === 'POST') {
       var body = "";
@@ -40,21 +39,17 @@ module.exports = {
         body += chunk;
       });
       request.on('end', function () {
-        console.log('POSTED: ' + body);
         var post = JSON.parse(body);
         post.id = storage.length;
         post.createdAt = new Date();
         storage[post.id] = post;
-        console.log(storage);
 
-        response.writeHead(201, headers);
-        response.end();
+        statusCode=201;
+
       });
     } else {
-      response.writeHead(404, headers);
-      response.end();
+      statusCode=404;
     }
-
 
     // // console.log(response);
     // /* the 'request' argument comes from nodes http module. It includes info about the
@@ -65,14 +60,6 @@ module.exports = {
 
     console.log("Serving request type " + request.method + " for url " + request.url);
 
-    var statusCode = 200;
-
-    //  Without this line, this server wouldn't work. See the note
-    //  * below about CORS.
-    var headers = module.exports.defaultCorsHeaders;
-
-    headers['Content-Type'] = "text/plain";
-
     // /* .writeHead() tells our server what HTTP status code to send back */
     response.writeHead(statusCode, headers);
 
@@ -80,7 +67,7 @@ module.exports = {
     //  * anything back to the client until you do. The string you pass to
     //  * response.end() will be the body of the response - i.e. what shows
     //  * up in the browser.*/
-    response.end("Hello, World!");
+    response.end(responseText);
   },
 
   returnResults: function(queryObj) {
