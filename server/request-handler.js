@@ -6,8 +6,8 @@
  * *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html. */
 var url = require('url');
 var _ = require('underscore');
+var fs=require('fs');
 var storage = [];
-
 
 
 module.exports = {
@@ -59,24 +59,49 @@ module.exports = {
           storage[post.id] = post;
         });
       }
+
+
+      // // console.log(response);
+      // /* the 'request' argument comes from nodes http module. It includes info about the
+      // request - such as what URL the browser is requesting. */
+
+      // /* Documentation for both request and response can be found at
+      //  * http://nodemanual.org/0.8.14/nodejs_ref_guide/http.html */
+
+
+      // /* .writeHead() tells our server what HTTP status code to send back */
+      response.writeHead(statusCode, headers);
+
+      // /* Make sure to always call response.end() - Node will not send
+      //  * anything back to the client until you do. The string you pass to
+      //  * response.end() will be the body of the response - i.e. what shows
+      //  * up in the browser.*/
+      response.end(responseText);
+
+    } else if (req.pathname==='/') {
+      console.log('this is doing something');
+      headers['Content-Type'] = "text/html";
+      statusCode=200;
+      // responseText='<html>'+
+      //               '<body>'+
+      //               '<h1>Goodbye world...</h1>'+
+      //               '</body>'+
+      //               '</html>';
+
+      fs.readFile("./client/index.html", {encoding: 'utf8'}, function (err,data) {
+        if (err) {
+          console.log('there is an error')
+          throw err;
+        }
+        response.writeHead(200, {'Content-Type': 'text/html'});
+        console.log(data);
+        response.end(data);
+      });
+    } else {
+      //check for file and serve that file
+      //use for dependencies
     }
 
-    // // console.log(response);
-    // /* the 'request' argument comes from nodes http module. It includes info about the
-    // request - such as what URL the browser is requesting. */
-
-    // /* Documentation for both request and response can be found at
-    //  * http://nodemanual.org/0.8.14/nodejs_ref_guide/http.html */
-
-
-    // /* .writeHead() tells our server what HTTP status code to send back */
-    response.writeHead(statusCode, headers);
-
-    // /* Make sure to always call response.end() - Node will not send
-    //  * anything back to the client until you do. The string you pass to
-    //  * response.end() will be the body of the response - i.e. what shows
-    //  * up in the browser.*/
-    response.end(responseText);
   },
 
   returnResults: function(queryObj) {
