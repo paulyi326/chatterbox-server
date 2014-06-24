@@ -5,12 +5,12 @@
  * this file and include it in basic-server.js so that it actually works.
  * *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html. */
 var url = require('url');
-var storage = {};
+var _ = require('underscore');
+var storage = [];
 
 module.exports = {
   handleRequest: function(request, response) {
-    console.log(request);
-
+    //OPTIONS
     if(request.method === "OPTIONS") {
       // handle options request
       console.log('heeeeeey');
@@ -18,61 +18,91 @@ module.exports = {
       headers['Content-Type'] = "text/plain";
       response.writeHead(200, headers);
       response.end();
+    //GET
     } else if (request.method === 'GET') {
       console.log('GOT IT');
-      console.log(request.url);
-      console.log(url.parse(request.url, true));
+
+      var req=url.parse(request.url, true);
+      var query=req.query;
+
+      console.log(req);
+
       var headers = module.exports.defaultCorsHeaders;
-      headers['Content-Type'] = "text/plain";
+      headers['Content-Type'] = "application/json";
       response.writeHead(200, headers);
-      response.end();
+      var results=JSON.stringify(module.exports.returnResults(query));
+      console.log(results);
+      response.end(results);
+    //POST
     } else if (request.method === 'POST') {
       var body = "";
       request.on('data', function (chunk) {
         body += chunk;
       });
       request.on('end', function () {
-        console.log('POSTed: ' + body);
-        response.writeHead(200);
+        console.log('POSTED: ' + body);
+        var post = JSON.parse(body);
+        post.id = storage.length;
+        post.createdAt = new Date();
+        storage[post.id] = post;
+        console.log(storage);
+
+        response.writeHead(201, headers);
         response.end();
       });
-      console.log(body);
+    } else {
+      response.writeHead(404, headers);
+      response.end();
     }
-    // else if (request.method === 'GET') {
-    //   if (path === '/1/messages') {
-
-    //   } else if (path === 'something else') {
-
-    //   }
-    // }
 
 
+    // // console.log(response);
+    // /* the 'request' argument comes from nodes http module. It includes info about the
+    // request - such as what URL the browser is requesting. */
 
-    // console.log(response);
-    /* the 'request' argument comes from nodes http module. It includes info about the
-    request - such as what URL the browser is requesting. */
-
-    /* Documentation for both request and response can be found at
-     * http://nodemanual.org/0.8.14/nodejs_ref_guide/http.html */
+    // /* Documentation for both request and response can be found at
+    //  * http://nodemanual.org/0.8.14/nodejs_ref_guide/http.html */
 
     console.log("Serving request type " + request.method + " for url " + request.url);
 
     var statusCode = 200;
 
-    /* Without this line, this server wouldn't work. See the note
-     * below about CORS. */
+    //  Without this line, this server wouldn't work. See the note
+    //  * below about CORS.
     var headers = module.exports.defaultCorsHeaders;
 
     headers['Content-Type'] = "text/plain";
 
-    /* .writeHead() tells our server what HTTP status code to send back */
+    // /* .writeHead() tells our server what HTTP status code to send back */
     response.writeHead(statusCode, headers);
 
-    /* Make sure to always call response.end() - Node will not send
-     * anything back to the client until you do. The string you pass to
-     * response.end() will be the body of the response - i.e. what shows
-     * up in the browser.*/
+    // /* Make sure to always call response.end() - Node will not send
+    //  * anything back to the client until you do. The string you pass to
+    //  * response.end() will be the body of the response - i.e. what shows
+    //  * up in the browser.*/
     response.end("Hello, World!");
+  },
+
+  returnResults: function(queryObj) {
+    var resultsObj={'results':[]};
+    var limit=queryObj.limit || 100;
+    var order=queryObj.order;
+
+    limit = Math.min(limit, storage.length);
+
+    if (order===undefined) {
+      for (var count=0; count<limit; count++) {
+        resultsObj.results.push(storage[count]);
+      }
+    } else if (order[0]==='-') {
+      order=order.slice(1);
+      resultsObj.results=_.sortBy(storage, order);
+      resultsObj.results=resultsObj.results.reverse();
+    } else {
+      resultsObj.results=_.sortBy(storage, order);
+    }
+
+    return resultsObj;
   },
 
   /* These headers will allow Cross-Origin Resource Sharing (CORS).

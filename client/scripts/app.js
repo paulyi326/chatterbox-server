@@ -45,7 +45,7 @@ var app = {
     };
 
     // this.server = 'http://127.0.0.1:3000/1/classes/chatterbox';
-    this.server = 'http://127.0.0.1:3000';
+    this.server = 'http://127.0.0.1:3000/classes/chatterbox';
     this.currentRoom = 'lobby';
     this.username = 'manu';
     this.friends = {};
@@ -63,7 +63,7 @@ var app = {
 
 
     //ADD THIS BACK IN
-    // setInterval( this._refresh.bind(this), 1000);
+    setInterval( this._refresh.bind(this), 1000);
   },
 
   handleSubmit: function(evt){
