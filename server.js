@@ -1,7 +1,7 @@
 /* Import node's http module: */
 var http = require("http");
 var url = require('url');
-var handleRequest = require('./request-handler.js').handleRequest;
+var handleRequest = require('./server/request-handler.js').handleRequest;
 
 /* Every server needs to listen on a port with a unique number. The
  * standard port for HTTP servers is port 80, but that port is
