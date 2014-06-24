@@ -94,12 +94,23 @@ module.exports = {
           throw err;
         }
         response.writeHead(200, {'Content-Type': 'text/html'});
-        console.log(data);
         response.end(data);
       });
     } else {
       //check for file and serve that file
       //use for dependencies
+      console.log(req.pathname);
+      headers['Content-Type'] = "text/html";
+      statusCode=200;
+
+      fs.readFile("./client"+req.pathname, {encoding: 'utf8'}, function (err,data) {
+        if (err) {
+          console.log('there is an error')
+          throw err;
+        }
+        response.writeHead(200, {'Content-Type': 'text/html'});
+        response.end(data);
+      });
     }
 
   },
