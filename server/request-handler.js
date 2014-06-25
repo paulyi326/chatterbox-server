@@ -9,36 +9,27 @@ var _ = require('underscore');
 var fs=require('fs');
 var storage = [];
 
-
 module.exports = {
   handleRequest: function(request, response) {
 
     var statusCode = 404;
-    //  Without this line, this server wouldn't work. See the note
-    //  * below about CORS.
     var headers = module.exports.defaultCorsHeaders;
     headers['Content-Type'] = "text/plain";
     var responseText='';
     var req=url.parse(request.url, true);
 
-    //only allow correct path
+    //only peform these requests for certain paths
     if (req.pathname.slice(0, 8)==='/classes') {
-
       var parameters=req.pathname.slice(1).split('/');
-
       var query=req.query;
-
       if (parameters[1]==='room') {
         query['roomname']=parameters[2];
       }
-
       //OPTIONS
       if(request.method === "OPTIONS") {
-        // handle options request
         statusCode=200;
       //GET
       } else if (request.method === 'GET') {
-
         headers['Content-Type'] = "application/json";
         statusCode=200;
         responseText=JSON.stringify(module.exports.returnResults(query));
@@ -82,11 +73,6 @@ module.exports = {
       console.log('this is doing something');
       headers['Content-Type'] = "text/html";
       statusCode=200;
-      // responseText='<html>'+
-      //               '<body>'+
-      //               '<h1>Goodbye world...</h1>'+
-      //               '</body>'+
-      //               '</html>';
 
       fs.readFile("./client/index.html", {encoding: 'utf8'}, function (err,data) {
         if (err) {
@@ -100,7 +86,13 @@ module.exports = {
       //check for file and serve that file
       //use for dependencies
       console.log(req.pathname);
-      headers['Content-Type'] = "text/html";
+      if (req.pathname.slice(-3) === 'css') {
+        console.log('this should be css');
+        var contentType = "text/css";
+      } else {
+        console.log('this should be js');
+        var contentType = "text/javscript";
+      }
       statusCode=200;
 
       fs.readFile("./client"+req.pathname, {encoding: 'utf8'}, function (err,data) {
@@ -108,7 +100,7 @@ module.exports = {
           console.log('there is an error')
           throw err;
         }
-        response.writeHead(200, {'Content-Type': 'text/html'});
+        response.writeHead(200, {'Content-Type': contentType});
         response.end(data);
       });
     }
