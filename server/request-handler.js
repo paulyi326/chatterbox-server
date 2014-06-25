@@ -1,9 +1,3 @@
-/* You should implement your request handler function in this file.
- * And hey! This is already getting passed to http.createServer()
- * in basic-server.js. But it won't work as is.
- * You'll have to figure out a way to export this function from
- * this file and include it in basic-server.js so that it actually works.
- * *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html. */
 var url = require('url');
 var _ = require('underscore');
 var fs=require('fs');
@@ -37,9 +31,11 @@ module.exports = {
       } else if (request.method === 'POST') {
         statusCode=201;
         var body = "";
+        //since data comes in a stream, we need to concatenate and return once it has all loaded
         request.on('data', function (chunk) {
           body += chunk;
         });
+        //adjust atributes and add to storage once all data has come in
         request.on('end', function () {
           var post = JSON.parse(body);
           post.id = storage.length;
@@ -51,15 +47,6 @@ module.exports = {
         });
       }
 
-
-      // // console.log(response);
-      // /* the 'request' argument comes from nodes http module. It includes info about the
-      // request - such as what URL the browser is requesting. */
-
-      // /* Documentation for both request and response can be found at
-      //  * http://nodemanual.org/0.8.14/nodejs_ref_guide/http.html */
-
-
       // /* .writeHead() tells our server what HTTP status code to send back */
       response.writeHead(statusCode, headers);
 
@@ -69,38 +56,36 @@ module.exports = {
       //  * up in the browser.*/
       response.end(responseText);
 
+    //load client-side html at main server address
     } else if (req.pathname==='/') {
-      console.log('this is doing something');
       headers['Content-Type'] = "text/html";
-      statusCode=200;
 
+      //read in the file and send (async)
       fs.readFile("./client/index.html", {encoding: 'utf8'}, function (err,data) {
         if (err) {
-          console.log('there is an error')
           throw err;
         }
-        response.writeHead(200, {'Content-Type': 'text/html'});
+        statusCode=200;
+        response.writeHead(statusCode, {'Content-Type': 'text/html'});
         response.end(data);
       });
     } else {
-      //check for file and serve that file
-      //use for dependencies
-      console.log(req.pathname);
+      //serve other files - use for dependencies
+      //handle css and js files differently
       if (req.pathname.slice(-3) === 'css') {
-        console.log('this should be css');
         var contentType = "text/css";
       } else {
-        console.log('this should be js');
         var contentType = "text/javscript";
       }
-      statusCode=200;
 
+      //read file and send
       fs.readFile("./client"+req.pathname, {encoding: 'utf8'}, function (err,data) {
         if (err) {
           console.log('there is an error')
           throw err;
         }
-        response.writeHead(200, {'Content-Type': contentType});
+        statusCode=200;
+        response.writeHead(statusCode, {'Content-Type': contentType});
         response.end(data);
       });
     }
@@ -112,8 +97,8 @@ module.exports = {
     var limit=queryObj.limit || 100;
     var order=queryObj.order;
     var roomname = queryObj.roomname;
-
     var filterStorage=storage;
+    //filter if roomname is specified
     if (roomname) {
       filterStorage = _.filter(storage, function(messageObj) {
         return messageObj.roomname === roomname;
@@ -137,11 +122,6 @@ module.exports = {
     return resultsObj;
   },
 
-  /* These headers will allow Cross-Origin Resource Sharing (CORS).
-   * This CRUCIAL code allows this server to talk to websites that
-   * are on different domains. (Your chat client is running from a url
-   * like file://your/chat/client/index.html, which is considered a
-   * different domain.) */
   defaultCorsHeaders: {
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
